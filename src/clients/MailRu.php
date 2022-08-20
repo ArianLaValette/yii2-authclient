@@ -5,7 +5,6 @@
 
 namespace yii\authclient\clients;
 
-
 use yii\authclient\OAuth2;
 
 /**
@@ -46,7 +45,6 @@ class MailRu extends OAuth2{
      * @inheritdoc
      */
     public $apiBaseUrl = 'http://www.appsmail.ru/platform/api?method=';
-
  
     /**
      * @inheritdoc
@@ -98,7 +96,6 @@ class MailRu extends OAuth2{
 
         return md5($params . $secret_key);
     }
-
 
     /**
      * {@inheritdoc}
