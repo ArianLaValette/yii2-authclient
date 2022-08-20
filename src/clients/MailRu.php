@@ -49,25 +49,56 @@ class MailRu extends OAuth2{
 
  
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     protected function initUserAttributes()
     {
-        return $this->api('info', 'GET');
+        $request = $this->createApiRequest()->setMethod('GET')->setUrl('users.getInfo');
+        $response = $request->send();
+        $response->setFormat('json');
+
+        if ($response->isOk && $response->data && $response->data['0']) {
+            return $response->data['0'];
+        }
+
+        throw new InvalidResponseException($response);
     }
 
     /**
-     * {@inheritdoc}
+     * @inheritdoc
      */
     public function applyAccessTokenToRequest($request, $accessToken)
     {
+        parent::applyAccessTokenToRequest($request, $accessToken);
+
         $data = $request->getData();
-        if (!isset($data['format'])) {
-            $data['format'] = 'json';
-        }
-        $data['oauth_token'] = $accessToken->getToken();
+
+        $data['method'] = str_replace('/', '', $request->getUrl());
+        $data['uids'] = $accessToken->getParam('x_mailru_vid');
+        $data['app_id'] = $this->clientId;
+        $data['secure'] = 1;
+        $data['sig'] = $this->sig($data, $this->clientSecret);
+
+        $request->setUrl('');
         $request->setData($data);
     }
+
+    /**
+     * Generate signature for API mail.ru
+     *
+     * @return string
+     */
+    public function sig(array $request_params, $secret_key) {
+        ksort($request_params);
+        $params = '';
+
+        foreach ($request_params as $key => $value) {
+            $params .= "$key=$value";
+        }
+
+        return md5($params . $secret_key);
+    }
+
 
     /**
      * {@inheritdoc}
@@ -84,6 +115,14 @@ class MailRu extends OAuth2{
     {
         return 'MailRu';
     }
-
-
+    
+    /**
+     * @inheritdoc
+     */
+    protected function defaultNormalizeUserAttributeMap()
+    {
+        return [
+            'id' => 'uid'
+        ];
+    }
 }
